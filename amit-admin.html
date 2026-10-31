@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+<title>Admin – Amit Nagvanshi</title>
+<style>
+:root{--bg:#080808;--side:#111;--card:#171717;--mute:#A1A1AA;--gold:#D4AF37}
+*{box-sizing:border-box;margin:0}body{background:var(--bg);color:#fff;font:15px/1.5 system-ui,sans-serif}
+h1{font:800 2rem Georgia,serif;margin-bottom:18px}
+.app{display:flex;flex-direction:column;min-height:100vh}aside{background:var(--side);padding:12px}
+nav{display:flex;gap:4px;overflow-x:auto}nav button,nav a{background:none;border:0;color:var(--mute);padding:9px 13px;border-radius:10px;font:inherit;cursor:pointer;white-space:nowrap;text-decoration:none;text-align:left}
+nav .on{background:var(--card);color:var(--gold)}main{flex:1;padding:20px 16px 70px;max-width:920px;width:100%}
+@media(min-width:900px){.app{flex-direction:row}aside{width:230px;height:100vh;position:sticky;top:0}nav{flex-direction:column}main{padding:36px}}
+.card,details{background:var(--card);border-radius:16px;padding:16px;margin-top:12px}summary{cursor:pointer;font-weight:600}
+label{display:block;font-size:.84rem;color:var(--mute);margin:12px 0 0}.cb{display:flex;gap:8px;align-items:center;color:#fff}
+input,select,textarea{width:100%;margin-top:4px;background:var(--side);border:1px solid #333;border-radius:10px;padding:10px 12px;color:#fff;font:inherit}.cb input{width:auto;margin:0}
+.btn{padding:10px 18px;border-radius:99px;border:1px solid #444;background:none;color:#fff;font:600 .82rem system-ui;cursor:pointer;margin:14px 8px 0 0}.g{background:var(--gold);border-color:var(--gold);color:#080808}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}@media(min-width:700px){.grid{grid-template-columns:repeat(3,1fr)}}
+.stat{background:var(--card);border-left:2px solid var(--gold);border-radius:14px;padding:16px}.stat b{font:800 1.8rem Georgia,serif;display:block}.stat span,small,.m{color:var(--mute);font-size:.85rem}
+.bad{color:#f87171}.ok{color:#4ade80}.gl{color:var(--gold)}.bar{display:flex;gap:8px;flex-wrap:wrap}.bar input,.bar select{flex:1;min-width:130px;margin:0}
+#t{position:fixed;left:12px;right:12px;bottom:14px;padding:12px 16px;border-radius:12px;background:#222;border:1px solid var(--gold);display:none;z-index:9}
+.login{max-width:380px;margin:12vh auto;padding:0 18px}
+</style></head><body><div id="app"></div><div id="t" role="status"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+// "View site" link target.
+const SITE_URL="/";
+const U="https://tolqtbeibezrikqpoudb.supabase.co",K=localStorage.getItem("sbkey")||"sb_publishable_cgX4nLKOofh7Ziq_yr0YYg_k6eP03PH"; // publishable key: safe in browser, RLS protects data
+const sb=supabase.createClient(U,K),$=s=>document.querySelector(s),app=$('#app');
+const h=(t,a={},...c)=>{const e=document.createElement(t);let v;for(const k in a){if(k=='class')e.className=a[k];else if(k.startsWith('on'))e[k]=a[k];else if(k=='value')v=a[k];else if(k=='checked')e.checked=!!a[k];else if(a[k]!=null)e.setAttribute(k,a[k])}c.flat().forEach(x=>e.append(x??''));if(v!=null)e.value=v;return e};
+const toast=(m,ok=1)=>{const t=$('#t');t.textContent=m;t.style.display='block';t.style.borderColor=ok?'#D4AF37':'#f87171';setTimeout(()=>t.style.display='none',3500)};
+const LIM={'profile-images':[5e6,['image/jpeg','image/png','image/webp']],'video-thumbnails':[5e6,['image/jpeg','image/png','image/webp']],'gallery-images':[5e6,['image/jpeg','image/png','image/webp']],'media-kit':[10e6,['application/pdf']]};
+async function up(b,f){const[m,t]=LIM[b];if(!t.includes(f.type))throw Error('Unsupported file type: '+f.type);if(f.size>m)throw Error('File too large (max '+m/1e6+' MB)');const p=crypto.randomUUID()+'.'+f.type.split('/')[1];const{error}=await sb.storage.from(b).upload(p,f,{contentType:f.type});if(error)throw error;return sb.storage.from(b).getPublicUrl(p).data.publicUrl}
+const err=e=>{const m=e.message||String(e);return h('p',{class:'bad'},m+(/does not exist|permission denied|schema cache/i.test(m)?' → run supabase/schema.sql and schema_v2.sql, and make sure your account is in admin_users.':''))};
+const S={
+profile:{t:'Profile',table:'profiles',single:1,f:[['full_name','Full name'],['profession','Profession'],['bio','Bio','ta'],['profile_image','Profile photo (max 5 MB)','file','profile-images'],['location','Location'],['email','Public email'],['phone','Phone'],['youtube_url','YouTube URL'],['instagram_url','Instagram URL']]},
+videos:{t:'Videos',table:'videos',label:'title',order:'display_order',f:[['title','Title'],['description','Description','ta'],['platform','Platform','sel',['youtube','instagram']],['video_url','Video URL (https://…)'],['video_id','Video ID'],['thumbnail_url','Thumbnail','file','video-thumbnails'],['category','Category'],['is_featured','Featured','cb'],['is_published','Published','cb'],['display_order','Display order','num']]},
+stats:{t:'Statistics',table:'social_statistics',single:1,f:[['youtube_subscribers','YouTube subscribers','num'],['instagram_followers','Instagram followers','num'],['total_views','Total views','num'],['total_videos','Total content published','num']]},
+collab:{t:'Collaborations',table:'collaborations',label:'service_name',order:'display_order',f:[['service_name','Service name'],['description','Description','ta'],['icon','Icon (Lucide name)'],['is_active','Active','cb'],['display_order','Display order','num']]},
+media:{t:'Media Kit',table:'media_kit',single:1,f:[['introduction','Introduction','ta'],['content_categories','Content categories (comma separated)','arr'],['audience_demographics','Audience demographics (JSON, verified only)','json'],['previous_collaborations','Previous collaborations (verified only)','arr'],['pdf_url','Media kit PDF (max 10 MB)','file','media-kit']]},
+gallery:{t:'Gallery',table:'gallery_images',label:'description',order:'display_order',f:[['image_url','Image (max 5 MB)','file','gallery-images'],['description','Description'],['display_order','Display order','num']]},
+settings:{t:'Settings',table:'site_settings',single:1,f:[['site_title','Website title'],['meta_description','Meta description','ta'],['contact_email','Contact email'],['whatsapp','WhatsApp (digits with country code)'],['profile_visible','Show About section','cb']]}};
+const D={is_published:true,is_active:true,profile_visible:true};
+const fld=(f,row)=>{const[n,l,ty,ex]=f,v=row?.[n];
+if(ty=='cb')return h('label',{class:'cb'},h('input',{type:'checkbox',name:n,checked:row?v:D[n]}),l);
+if(ty=='file')return h('label',{},l,h('input',{type:'hidden',name:n,value:v}),v?h('small',{class:'gl'},' Current: '+v):'',h('input',{type:'file',name:'f_'+n}));
+let i;if(ty=='ta')i=h('textarea',{name:n,rows:3,value:v});else if(ty=='json')i=h('textarea',{name:n,rows:3,value:JSON.stringify(v??{})});
+else if(ty=='sel')i=h('select',{name:n,value:v||ex[0]},ex.map(o=>h('option',{},o)));
+else if(ty=='arr')i=h('input',{name:n,value:(v||[]).join(', ')});else i=h('input',{name:n,type:ty=='num'?'number':'text',value:v});
+return h('label',{},l,i)};
+async function collect(s,fm){const o={};for(const[n,,ty,ex]of s.f){const el=fm.elements[n];
+if(ty=='cb')o[n]=el.checked;else if(ty=='file'){const f=fm.elements['f_'+n].files[0];o[n]=f?await up(ex,f):(el.value||null)}
+else if(ty=='num')o[n]=el.value===''?(n=='display_order'?0:null):Number(el.value);else if(ty=='arr')o[n]=el.value.split(',').map(x=>x.trim()).filter(Boolean);
+else if(ty=='json')o[n]=el.value.trim()?JSON.parse(el.value):{};else o[n]=el.value.trim()||null}return o}
+const mk=(k,s,row)=>{const fm=h('form',{},s.f.map(f=>fld(f,row)),h('button',{class:'btn g'},row?'Save changes':'Add'));
+fm.onsubmit=async e=>{e.preventDefault();try{const o=await collect(s,fm);const{error}=await(row?sb.from(s.table).update(o).eq('id',row.id):sb.from(s.table).insert(o));if(error)throw error;toast('Saved');sect(k)}catch(x){toast(x.message,0)}};
+if(row&&!s.single){const d=h('button',{type:'button',class:'btn',onclick:async()=>{if(!confirm('Delete this item?'))return;const{error}=await sb.from(s.table).delete().eq('id',row.id);error?toast(error.message,0):(toast('Deleted'),sect(k))}},'Delete');fm.append(d)}return fm};
+async function sect(k){const s=S[k];main.replaceChildren(h('h1',{},s.t));
+const{data,error}=await sb.from(s.table).select('*').order(s.order||(s.single?'updated_at':'created_at'));if(error)return main.append(err(error));
+if(k=='gallery'){const i=h('input',{type:'file',multiple:1,accept:'image/jpeg,image/png,image/webp'});main.append(h('div',{class:'card'},h('label',{},'Upload multiple images',i),h('button',{class:'btn g',onclick:async()=>{try{if(!i.files.length)throw Error('Choose images first');for(const f of i.files){const{error}=await sb.from('gallery_images').insert({image_url:await up('gallery-images',f)});if(error)throw error}toast('Uploaded');sect(k)}catch(x){toast(x.message,0)}}},'Upload')))}
+if(s.single){main.append(data[0]?h('div',{class:'card'},mk(k,s,data[0])):h('p',{class:'bad'},'No row found. Run supabase/schema.sql first.'));return}
+data.forEach(r=>main.append(h('details',{},h('summary',{},r[s.label]||'Item'),mk(k,s,r))));if(!data.length)main.append(h('p',{class:'m'},'Nothing here yet.'));
+main.append(h('details',{},h('summary',{class:'gl'},'Add new'),mk(k,s,null)))}
+async function dash(){main.replaceChildren(h('h1',{},'Overview'));const c=async(t,col,v)=>{let q=sb.from(t).select('*',{count:'exact',head:true});if(col)q=q.eq(col,v);return(await q).count??'?'};
+const[a,b,f,e,n]=await Promise.all([c('videos'),c('videos','is_published',true),c('videos','is_featured',true),c('enquiries'),c('enquiries','status','new')]);
+const{data:st}=await sb.from('social_statistics').select('*').limit(1).maybeSingle();const x=v=>v==null?'Not set':Number(v).toLocaleString('en-IN');
+main.append(h('div',{class:'grid'},[['Total videos',a],['Published videos',b],['Featured videos',f],['Total enquiries',e],['New enquiries',n],['YouTube subscribers',x(st?.youtube_subscribers)],['Instagram followers',x(st?.instagram_followers)]].map(([l,v])=>h('div',{class:'stat'},h('b',{},v),h('span',{},l)))))}
+const ST=['new','contacted','in_progress','completed','rejected'];
+async function enq(){main.replaceChildren(h('h1',{},'Enquiries'));const q=h('input',{placeholder:'Search name, company, email'}),s=h('select',{},h('option',{value:''},'All statuses'),ST.map(x=>h('option',{},x))),box=h('div'),rows=[];
+const ex=()=>{const e=v=>{v=String(v??'');if(/^[=+\-@]/.test(v))v="'"+v;return'"'+v.replace(/"/g,'""')+'"'};const L=[['Name','Company','Email','Phone','Type','Budget','Message','Status','Date'].join(','),...rows.map(r=>[r.full_name,r.company_name,r.email,r.phone,r.collaboration_type,r.budget_range,r.message,r.status,r.created_at].map(e).join(','))];const a=h('a',{href:URL.createObjectURL(new Blob([L.join('\n')],{type:'text/csv'})),download:'enquiries.csv'});a.click()};
+const draw=()=>{const t=q.value.toLowerCase(),L=rows.filter(r=>(!s.value||r.status==s.value)&&(!t||[r.full_name,r.company_name,r.email].join(' ').toLowerCase().includes(t)));box.replaceChildren(...(L.length?L:[h('p',{class:'m'},'No enquiries found.')]).map(r=>r.id?h('div',{class:'card'},h('b',{},r.full_name+(r.company_name?' · '+r.company_name:'')),h('p',{class:'m'},[r.email,r.phone,r.collaboration_type,r.budget_range,new Date(r.created_at).toLocaleString('en-IN')].filter(Boolean).join(' · ')),h('p',{style:'white-space:pre-wrap;margin:8px 0'},r.message),
+h('select',{style:'width:auto',value:r.status,onchange:async e=>{const{error}=await sb.from('enquiries').update({status:e.target.value}).eq('id',r.id);error?toast(error.message,0):(r.status=e.target.value,toast('Status updated'))}},ST.map(x=>h('option',{},x))),
+h('button',{class:'btn',onclick:async()=>{if(!confirm('Delete enquiry?'))return;const{error}=await sb.from('enquiries').delete().eq('id',r.id);error?toast(error.message,0):(rows.splice(rows.indexOf(r),1),draw())}},'Delete')):r))};
+q.oninput=draw;s.onchange=draw;main.append(h('div',{class:'bar'},q,s,h('button',{class:'btn g',style:'margin:0',onclick:ex},'Export CSV')),box);
+const{data,error}=await sb.from('enquiries').select('*').order('created_at',{ascending:false});if(error)return main.append(err(error));rows.push(...data);draw()}
+async function check(){main.replaceChildren(h('h1',{},'System check'));const out=h('div',{class:'card'});main.append(out);
+const row=(ok,l,d='')=>out.append(h('p',{},h('span',{class:ok?'ok':'bad'},ok?'✔ ':'✘ '),l,d?h('small',{},'  '+d):''));
+try{const r=await fetch(U+'/auth/v1/health',{headers:{apikey:K}});row(r.ok,'Supabase reachable',r.ok?'':'HTTP '+r.status)}catch(e){row(0,'Supabase reachable','Network blocked – try without VPN/ad-blocker')}
+const{data:u}=await sb.auth.getUser();row(!!u.user,'Signed in',u.user?.email);
+const{data:ia,error:ie}=await sb.rpc('is_admin');row(ia===true,'Account is admin',ie?ie.message:(ia?'':'add your user to admin_users'));
+for(const t of['profiles','videos','social_statistics','collaborations','enquiries','media_kit','gallery_images','site_settings','admin_users']){const{count,error}=await sb.from(t).select('*',{count:'exact',head:true});row(!error,'Table '+t,error?error.message:count+' rows')}
+for(const b of Object.keys(LIM)){const{error}=await sb.storage.from(b).list('',{limit:1});row(!error,'Bucket '+b,error?error.message:'')}
+if(SITE_URL)out.append(h('a',{class:'btn g',href:SITE_URL,style:'display:inline-block;text-decoration:none'},'Open public site'))}
+const NAV=[['dash','Overview'],['profile','Profile'],['videos','Videos'],['stats','Statistics'],['collab','Collaborations'],['media','Media Kit'],['gallery','Gallery'],['enq','Enquiries'],['settings','Settings'],['check','System check']];
+let main;
+const go=k=>{document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.k==k));(k=='dash'?dash:k=='enq'?enq:k=='check'?check:()=>sect(k))()};
+function panel(email){main=h('main');app.replaceChildren(h('div',{class:'app'},h('aside',{},h('b',{style:'letter-spacing:.2em;display:block;margin:4px 8px 8px'},'ADMIN'),h('nav',{},NAV.map(([k,l])=>h('button',{'data-k':k,onclick:()=>go(k)},l)),(SITE_URL?h('a',{href:SITE_URL},'View site'):''),h('button',{onclick:async()=>{await sb.auth.signOut();login()}},'Logout'))),main));go('dash')}
+function login(msg='',info=''){const e=h('input',{type:'email',autocomplete:'email',required:1}),p=h('input',{type:'password',autocomplete:'current-password',required:1}),m=h('p',{class:'bad'},msg),i=h('p',{class:'ok'},info);
+const sh=h('button',{type:'button',class:'btn',style:'margin:6px 0 0',onclick:()=>{p.type=p.type=='password'?'text':'password';sh.textContent=p.type=='password'?'Show password':'Hide password'}},'Show password');
+const fm=h('form',{class:'login'},h('h1',{},'Admin sign in'),h('label',{},'Email',e),h('label',{},'Password',p),sh,m,i,h('button',{class:'btn g',style:'display:block;width:100%;margin:14px 0 0'},'Sign in'),h('button',{type:'button',class:'btn',style:'border:0',onclick:async()=>{if(!/^\S+@\S+\.\S+$/.test(e.value))return m.textContent='Type your email first.';const{error}=await sb.auth.resetPasswordForEmail(e.value.trim(),{redirectTo:location.origin+location.pathname});m.textContent=error?'Could not send reset email.':'';i.textContent=error?'':'If this email has an account, a reset link is on its way.'}},'Forgot password?'));
+fm.onsubmit=async ev=>{ev.preventDefault();m.textContent='';if(p.value.length<6)return m.textContent='Password must be at least 6 characters.';fm.querySelector('.g').textContent='Please wait…';const{error}=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});if(error)return login(/api key/i.test(error.message)?'Invalid API key. Open "Connection problem?" below.':'Email or password is incorrect.');boot()};
+const ki=h('input',{placeholder:'eyJ…'});fm.append(h('details',{style:'margin-top:18px'},h('summary',{class:'m'},'Connection problem?'),h('p',{class:'m',style:'margin:8px 0'},'Paste the legacy anon key (Supabase > Project Settings > API Keys > Legacy). Leave empty to reset.'),ki,h('button',{type:'button',class:'btn',onclick:()=>{ki.value.trim()?localStorage.setItem('sbkey',ki.value.trim()):localStorage.removeItem('sbkey');location.reload()}},'Save key')));
+app.replaceChildren(fm)}
+async function boot(){const{data:{session}}=await sb.auth.getSession();if(!session)return login();const{data:ok}=await sb.rpc('is_admin');if(!ok){await sb.auth.signOut();return login('This account is not an admin (or the SQL has not been run yet).')}panel(session.user.email)}
+function reset(){const p=h('input',{type:'password',minlength:8,required:1}),m=h('p',{class:'bad'}),fm=h('form',{class:'login'},h('h1',{},'New password'),h('label',{},'New password (8+ characters)',p),m,h('button',{class:'btn g',style:'display:block;width:100%'},'Save password'));
+fm.onsubmit=async e=>{e.preventDefault();const{error}=await sb.auth.updateUser({password:p.value});error?m.textContent=error.message:(history.replaceState(null,'',location.pathname),boot())};app.replaceChildren(fm)}
+sb.auth.onAuthStateChange(ev=>{if(ev=='PASSWORD_RECOVERY')reset()});
+if(!location.hash.includes('type=recovery'))boot();
+</script></body></html>

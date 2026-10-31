@@ -1,2 +1,4 @@
 User-agent: *
-Disallow: /
+Allow: /
+Disallow: /amit-admin.html
+Disallow: /amit-admin

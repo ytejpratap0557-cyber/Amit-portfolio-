@@ -3,7 +3,9 @@ import type { Video } from "@/data/videos";
 const handle = (u?: string | null) => (u ? "@" + u.replace(/\/$/, "").split("@").pop() : "");
 const fmt = (n: number | null | undefined) => (n == null ? "" : Number(n).toLocaleString("en-IN"));
 export async function getSiteData() {
-  const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL, key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return emptyData("Supabase environment variables are missing");
+  const sb = createClient(url, key, { auth: { persistSession: false } });
   const [p, v, s, c, m, g, ss] = await Promise.all([
     sb.from("profiles").select("*").limit(1).maybeSingle(),
     sb.from("videos").select("*").order("display_order").order("created_at", { ascending: false }),
@@ -30,4 +32,13 @@ export async function getSiteData() {
   const services = (c.data ?? []).filter((r: any) => r.is_active).map((r: any) => [r.service_name, r.description ?? "", r.icon ?? "Sparkles"] as const);
   const gallery = (g.data ?? []).map((r: any) => ({ id: r.id as string, url: r.image_url as string, description: (r.description ?? "") as string }));
   return { site, videos, services, gallery, error };
+}
+
+function emptyData(error: string) {
+  console.error(error);
+  const site = { name: "Amit Nagvanshi", title: "Content Creator", location: "Kolkata, West Bengal, India", email: "", portrait: "/images/amit.svg", about: [] as string[],
+    youtube: { url: "https://www.youtube.com/@amit_nagvanshi23", handle: "@amit_nagvanshi23" }, instagram: { url: "https://www.instagram.com/nagvanshiamit23/", handle: "@nagvanshiamit23" },
+    categories: [] as string[], pastBrands: [] as string[], whatsapp: "", profileVisible: true, mediaIntro: "", pdfUrl: "",
+    stats: { youtubeSubscribers: "", instagramFollowers: "", totalViews: "", contentPublished: "" } };
+  return { site, videos: [] as Video[], services: [] as (readonly [string, string, string])[], gallery: [] as { id: string; url: string; description: string }[], error };
 }

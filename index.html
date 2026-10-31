@@ -111,13 +111,15 @@ footer ul{list-style:none;padding:0;color:var(--mute);display:grid;gap:8px;font-
 <div class="full"><button class="btn gold" id="sb" style="width:100%;justify-content:center">SEND ENQUIRY</button><p id="ok" role="status" style="margin-top:12px"></p></div></form></div></section>
 </main>
 <footer><div class="wrap fg"><div><p class="logo">AMIT NAGVANSHI</p><p class="mute" style="font-size:.9rem">Content Creator | Digital Creator</p></div>
-<ul><li><a href="#home">Home</a></li><li><a href="#about">About</a></li><li><a href="#videos">Videos</a></li><li><a href="#collaborations">Collaborations</a></li><li><a href="#contact">Contact</a></li><li><a href="/admin/" rel="nofollow">Admin</a></li></ul>
+<ul><li><a href="#home">Home</a></li><li><a href="#about">About</a></li><li><a href="#videos">Videos</a></li><li><a href="#collaborations">Collaborations</a></li><li><a href="#contact">Contact</a></li><li id="adm" hidden><a id="adl" href="#" rel="nofollow">Admin</a></li></ul>
 <ul><li><a class="yt" href="#" target="_blank" rel="noopener noreferrer">YouTube</a></li><li><a class="ig" href="#" target="_blank" rel="noopener noreferrer">Instagram</a></li><li id="wa" hidden><a id="wal" href="#" target="_blank" rel="noopener noreferrer">WhatsApp</a></li></ul>
 <p class="mute" style="font-size:.85rem;grid-column:1/-1">© 2026 Amit Nagvanshi. All Rights Reserved.</p></div></footer>
 <div class="modal" id="md" role="dialog" aria-modal="true"><div class="in"><button class="btn" id="mc" style="margin:0 0 10px auto;display:flex">✕ Close</button><div class="fr" id="fr"></div><a class="btn" id="mo" target="_blank" rel="noopener noreferrer" style="margin-top:12px">Embed not loading? Open original</a></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
+// After you deploy the admin panel as its own Netlify site, paste its link between the quotes below to show an "Admin" link in the footer.
+const ADMIN_URL="";
 const U="https://tolqtbeibezrikqpoudb.supabase.co",K=localStorage.getItem("sbkey")||"sb_publishable_cgX4nLKOofh7Ziq_yr0YYg_k6eP03PH";
 const sb=supabase.createClient(U,K),$=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),safe=u=>/^https:\/\//.test(u||'')?u:'#';
@@ -154,6 +156,7 @@ const cl=(c.data||[]).filter(x=>x.is_active);$('#cg').innerHTML=cl.length?cl.map
 const row=(a,b)=>b?'<div><b>'+a+'</b><span>'+b+'</span></div>':'';const cats=(M.content_categories||[]).join(', '),pb=(M.previous_collaborations||[]).join(', ');
 $('#kit').innerHTML=row('Creator',esc(M.introduction||((P.full_name||'Amit Nagvanshi')+', '+(P.profession||'content creator').toLowerCase()+(P.location?' based in '+P.location:'')+'.')))+row('Platforms','YouTube '+esc(hnd(yu))+' · Instagram '+esc(hnd(iu)))+row('Content categories',esc(cats))+row('Previous collaborations',esc(pb))+row('Contact',esc(T.contact_email||P.email||''))+
 (M.pdf_url?'<a class="btn gold np" href="'+esc(safe(M.pdf_url))+'" target="_blank" rel="noopener noreferrer">DOWNLOAD MEDIA KIT PDF</a>':'<button class="btn gold np" onclick="window.print()">DOWNLOAD MEDIA KIT PDF</button>')}
+if(ADMIN_URL){$('#adm').hidden=false;$('#adl').href=ADMIN_URL}
 load();
 const f=$('#f');f.onsubmit=async e=>{e.preventDefault();const v=id=>$('#'+id).value.trim(),set=(i,m)=>{$('#'+i).textContent=m;return m};$('#ok').textContent='';$('#ok').style.color='';
 const bad=[set('en',v('n').length<2?'Enter your full name':''),set('ee',/^\S+@\S+\.\S+$/.test(v('e'))?'':'Enter a valid email address'),set('ep',/^[+\d\s()-]*$/.test(v('p'))?'':'Use digits only'),set('et',v('t')?'':'Choose a collaboration type'),set('em',v('m').length<10?'Add a little more detail (10+ characters)':'')].some(Boolean);

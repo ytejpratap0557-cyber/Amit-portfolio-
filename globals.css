@@ -1,0 +1,10 @@
+@tailwind base;@tailwind components;@tailwind utilities;
+html{scroll-behavior:smooth;scroll-padding-top:5rem}
+body{background:#080808;color:#fff}
+:focus-visible{outline:2px solid #D4AF37;outline-offset:3px}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.8rem 1.4rem;border-radius:999px;font-weight:600;font-size:.85rem;letter-spacing:.06em;transition:.25s}
+.btn-gold{background:#D4AF37;color:#080808}.btn-gold:hover{background:#e6c458}
+.btn-line{border:1px solid rgba(255,255,255,.2)}.btn-line:hover{border-color:#D4AF37;color:#D4AF37}
+.glass{background:rgba(23,23,23,.6);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.08)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media print{body *{visibility:hidden}#media-kit,#media-kit *{visibility:visible}#media-kit{position:absolute;inset:0;background:#fff;color:#000;padding:2rem}#media-kit .no-print{display:none}}
